@@ -2,6 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Bell,
   HelpCircle,
@@ -18,6 +19,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Header({ title }: { title: string }) {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-background px-6">
       <div className="flex flex-1 items-center justify-between">
@@ -47,12 +54,14 @@ export function Header({ title }: { title: string }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {user?.email || "Tài khoản của tôi"}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Hồ sơ</DropdownMenuItem>
               <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Đăng xuất</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>Đăng xuất</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

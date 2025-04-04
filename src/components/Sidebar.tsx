@@ -3,6 +3,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   BarChart3,
   MessageSquare,
@@ -15,6 +16,7 @@ import {
   ServerIcon,
   ShieldCheck,
   Sparkles,
+  LogOut,
 } from "lucide-react";
 
 type NavItemProps = {
@@ -44,6 +46,7 @@ const NavItem = ({ icon, label, to, active, subItem }: NavItemProps) => (
 export function Sidebar() {
   const location = useLocation();
   const pathname = location.pathname;
+  const { signOut, user } = useAuth();
 
   const navItems = [
     {
@@ -98,6 +101,10 @@ export function Sidebar() {
     },
   ];
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <div className="h-screen flex flex-col bg-sidebar fixed inset-y-0 z-30 w-64 border-r border-sidebar-border">
       <div className="p-4 border-b border-sidebar-border">
@@ -120,14 +127,27 @@ export function Sidebar() {
         </nav>
       </div>
       <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-            UD
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
+              {user?.email?.substring(0, 2).toUpperCase() || "UD"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sidebar-foreground font-medium text-sm truncate">
+                {user?.email || "User Demo"}
+              </p>
+              <p className="text-sidebar-foreground/60 text-xs">Admin</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sidebar-foreground font-medium text-sm">User Demo</p>
-            <p className="text-sidebar-foreground/60 text-xs">Admin</p>
-          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full mt-2 flex items-center justify-center gap-2"
+            onClick={handleSignOut}
+          >
+            <LogOut size={16} />
+            <span>Đăng xuất</span>
+          </Button>
         </div>
       </div>
     </div>
