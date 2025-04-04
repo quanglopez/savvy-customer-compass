@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../../hooks/useAuth';
@@ -8,46 +9,77 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the redirect path from location state or default to dashboard
+  // Lấy đường dẫn chuyển hướng từ trạng thái location hoặc mặc định là dashboard
   const from = location.state?.from?.pathname || '/dashboard';
+
+  // Kiểm tra trạng thái xác thực và chuyển hướng nếu đã đăng nhập
+  useEffect(() => {
+    if (!loading && user) {
+      console.log('Người dùng đã được xác thực, đang chuyển hướng...', user);
+      
+      // Trì hoãn chuyển hướng một chút để đảm bảo trạng thái được cập nhật
+      setTimeout(() => {
+        // Kiểm tra vai trò người dùng để xác định nơi chuyển hướng
+        const userRole = user.user_metadata?.role;
+        if (userRole === 'business' || userRole === 'admin') {
+          navigate('/dashboard', { replace: true });
+        } else {
+          navigate('/chat', { replace: true });
+        }
+      }, 100);
+    }
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error('Vui lòng nhập đầy đủ email và mật khẩu');
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
       await login(email, password);
-      
-      toast.success('Login successful');
-      
-      // Navigate to the redirect path
-      navigate(from, { replace: true });
-    } catch (error) {
-      toast.error('Login failed. Please check your credentials.');
-      console.error('Login error:', error);
+      // Việc chuyển hướng sẽ diễn ra trong hook useEffect khi trạng thái người dùng được cập nhật
+      toast.success('Đăng nhập thành công');
+    } catch (error: any) {
+      console.error('Lỗi đăng nhập:', error);
+      toast.error(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Nếu xác thực vẫn đang tải, hiển thị chỉ báo tải
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-lg">Đang tải...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Log in to your account
+            Đăng nhập vào tài khoản
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
+            Hoặc{' '}
             <Link
               to="/register"
               className="font-medium text-blue-600 hover:text-blue-500"
             >
-              create a new account
+              tạo tài khoản mới
             </Link>
           </p>
         </div>
@@ -55,7 +87,7 @@ export const Login: React.FC = () => {
           <div className="rounded-md shadow-sm -space-y-px">
             <div className="mb-4">
               <label htmlFor="email-address" className="sr-only">
-                Email address
+                Địa chỉ email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -70,13 +102,13 @@ export const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="appearance-none rounded-md relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Email address"
+                  placeholder="Địa chỉ email"
                 />
               </div>
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                Mật khẩu
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -91,7 +123,7 @@ export const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none rounded-md relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
+                  placeholder="Mật khẩu"
                 />
               </div>
             </div>
@@ -106,13 +138,13 @@ export const Login: React.FC = () => {
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                Remember me
+                Ghi nhớ đăng nhập
               </label>
             </div>
 
             <div className="text-sm">
               <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
-                Forgot your password?
+                Quên mật khẩu?
               </a>
             </div>
           </div>
@@ -126,10 +158,10 @@ export const Login: React.FC = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  <span>Signing in...</span>
+                  <span>Đang đăng nhập...</span>
                 </>
               ) : (
-                <span>Sign in</span>
+                <span>Đăng nhập</span>
               )}
             </button>
           </div>
@@ -137,4 +169,4 @@ export const Login: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};

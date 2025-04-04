@@ -23,7 +23,7 @@ export function Auth() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already logged in
+  // Chuyển hướng nếu đã đăng nhập
   React.useEffect(() => {
     if (session) {
       navigate("/");

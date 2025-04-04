@@ -27,9 +27,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("Initializing auth provider...");
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Trạng thái xác thực thay đổi:', event, session?.user);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -38,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Kiểm tra phiên ban đầu:', session?.user);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -48,48 +52,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
+      console.log("Đang thực hiện đăng ký với email:", email);
       const { error } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (error) {
+        console.error("Lỗi đăng ký:", error);
         return { error, success: false };
       }
 
       toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       return { error: null, success: true };
     } catch (error) {
-      console.error("Error signing up:", error);
+      console.error("Lỗi đăng ký:", error);
       return { error, success: false };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Đang thực hiện đăng nhập với email:", email);
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error("Lỗi đăng nhập:", error);
         return { error, success: false };
       }
 
+      console.log("Đăng nhập thành công:", data.user);
       toast.success("Đăng nhập thành công!");
       return { error: null, success: true };
     } catch (error) {
-      console.error("Error signing in:", error);
+      console.error("Lỗi đăng nhập:", error);
       return { error, success: false };
     }
   };
 
   const signOut = async () => {
     try {
+      console.log("Đang thực hiện đăng xuất...");
       await supabase.auth.signOut();
       toast.success("Đã đăng xuất");
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error("Lỗi đăng xuất:", error);
       toast.error("Lỗi khi đăng xuất");
     }
   };
@@ -109,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth phải được sử dụng trong AuthProvider");
   }
   return context;
 }
