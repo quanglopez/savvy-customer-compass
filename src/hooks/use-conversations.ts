@@ -1,130 +1,146 @@
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type Conversation = {
+export interface Conversation {
   id: string;
   title: string;
   created_at: string;
   updated_at: string;
-};
+}
 
-export type Message = {
+export interface Message {
   id: string;
-  content: string;
   conversation_id: string;
+  content: string;
   is_user: boolean;
   created_at: string;
-};
+  reactions?: MessageReaction[];
+}
 
-export function useConversations() {
-  const queryClient = useQueryClient();
+export interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  type: string;
+  created_at: string;
+}
+
+export const useConversations = () => {
   const { user } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
 
-  const getConversations = async (): Promise<Conversation[]> => {
-    const { data, error } = await supabase
-      .from("conversations")
-      .select("*")
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      toast.error("Không thể tải hội thoại: " + error.message);
-      throw error;
+  // Fetch conversations for the current user
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoadingConversations(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+        
+      if (error) throw error;
+      
+      setConversations(data || []);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    } finally {
+      setIsLoadingConversations(false);
     }
+  }, [user]);
+  
+  // Load conversations when user changes
+  useEffect(() => {
+    if (user) {
+      fetchConversations();
+    } else {
+      setConversations([]);
+    }
+  }, [user, fetchConversations]);
 
-    return data || [];
+  // Create a new conversation
+  const createConversation = async (title: string) => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from("conversations")
+        .insert({
+          title,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setConversations(prev => [data, ...prev]);
+      return data;
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      return null;
+    }
   };
 
+  // Delete a conversation
+  const deleteConversation = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", id);
+        
+      if (error) throw error;
+      
+      setConversations(prev => prev.filter(c => c.id !== id));
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+    }
+  };
+
+  // Rename a conversation
+  const renameConversation = async ({ id, title }: { id: string; title: string }) => {
+    try {
+      const { error } = await supabase
+        .from("conversations")
+        .update({ title, updated_at: new Date().toISOString() })
+        .eq("id", id);
+        
+      if (error) throw error;
+      
+      setConversations(prev =>
+        prev.map(c => (c.id === id ? { ...c, title, updated_at: new Date().toISOString() } : c))
+      );
+    } catch (error) {
+      console.error("Error renaming conversation:", error);
+    }
+  };
+
+  // Get messages for a conversation
   const getMessages = async (conversationId: string): Promise<Message[]> => {
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      toast.error("Không thể tải tin nhắn: " + error.message);
-      throw error;
+    try {
+      // First get the messages
+      const { data: messages, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at");
+        
+      if (error) throw error;
+      
+      return messages || [];
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      return [];
     }
-
-    return data || [];
   };
 
-  const createConversation = async (title: string): Promise<Conversation> => {
-    if (!user) {
-      toast.error("Bạn cần đăng nhập để tạo hội thoại");
-      throw new Error("User not authenticated");
-    }
-
-    const { data, error } = await supabase
-      .from("conversations")
-      .insert([{ title, user_id: user.id }])
-      .select()
-      .single();
-
-    if (error) {
-      toast.error("Không thể tạo hội thoại: " + error.message);
-      throw error;
-    }
-
-    return data;
-  };
-
-  const deleteConversation = async (conversationId: string): Promise<void> => {
-    if (!user) {
-      toast.error("Bạn cần đăng nhập để xóa hội thoại");
-      throw new Error("User not authenticated");
-    }
-
-    // First delete all messages in the conversation
-    const { error: messagesError } = await supabase
-      .from("messages")
-      .delete()
-      .eq("conversation_id", conversationId);
-
-    if (messagesError) {
-      toast.error("Không thể xóa tin nhắn: " + messagesError.message);
-      throw messagesError;
-    }
-
-    // Then delete the conversation
-    const { error } = await supabase
-      .from("conversations")
-      .delete()
-      .eq("id", conversationId);
-
-    if (error) {
-      toast.error("Không thể xóa hội thoại: " + error.message);
-      throw error;
-    }
-
-    toast.success("Đã xóa hội thoại");
-  };
-
-  const renameConversation = async (conversationId: string, newTitle: string): Promise<Conversation> => {
-    if (!user) {
-      toast.error("Bạn cần đăng nhập để đổi tên hội thoại");
-      throw new Error("User not authenticated");
-    }
-
-    const { data, error } = await supabase
-      .from("conversations")
-      .update({ title: newTitle, updated_at: new Date().toISOString() })
-      .eq("id", conversationId)
-      .select()
-      .single();
-
-    if (error) {
-      toast.error("Không thể đổi tên hội thoại: " + error.message);
-      throw error;
-    }
-
-    toast.success("Đã đổi tên hội thoại");
-    return data;
-  };
-
+  // Add a new message to a conversation
   const addMessage = async ({
     conversationId,
     content,
@@ -133,101 +149,129 @@ export function useConversations() {
     conversationId: string;
     content: string;
     isUser?: boolean;
-  }): Promise<Message> => {
-    const { data, error } = await supabase
-      .from("messages")
-      .insert([
-        {
+  }) => {
+    try {
+      // Add the message
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
           conversation_id: conversationId,
           content,
           is_user: isUser,
-        },
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      toast.error("Không thể gửi tin nhắn: " + error.message);
-      throw error;
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      // Update conversation's updated_at timestamp
+      await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
+        
+      return data;
+    } catch (error) {
+      console.error("Error adding message:", error);
+      return null;
     }
-
-    // Update the conversation's updated_at timestamp
-    await supabase
-      .from("conversations")
-      .update({ updated_at: new Date().toISOString() })
-      .eq("id", conversationId);
-
-    return data;
+  };
+  
+  // Update a message
+  const updateMessage = async (messageId: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .update({ content })
+        .eq("id", messageId);
+        
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error("Error updating message:", error);
+      return false;
+    }
+  };
+  
+  // Add a reaction to a message
+  const addReaction = async (messageId: string, reactionType: string) => {
+    if (!user) return false;
+    
+    try {
+      // First check if the user already reacted with this type
+      const { data: existingReaction, error: checkError } = await supabase
+        .from("message_reactions")
+        .select("*")
+        .eq("message_id", messageId)
+        .eq("user_id", user.id)
+        .eq("type", reactionType)
+        .maybeSingle();
+        
+      if (checkError) throw checkError;
+      
+      // If the reaction already exists, remove it (toggle behavior)
+      if (existingReaction) {
+        const { error } = await supabase
+          .from("message_reactions")
+          .delete()
+          .eq("id", existingReaction.id);
+          
+        if (error) throw error;
+        return true;
+      }
+      
+      // Otherwise, add the new reaction
+      const { error } = await supabase
+        .from("message_reactions")
+        .insert({
+          message_id: messageId,
+          user_id: user.id,
+          type: reactionType,
+        });
+        
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error("Error adding reaction:", error);
+      return false;
+    }
   };
 
-  // Set up real-time subscription for messages
-  const subscribeToMessages = (conversationId: string, callback: (message: Message) => void) => {
+  // Subscribe to real-time updates for messages in a conversation
+  const subscribeToMessages = (conversationId: string, onNewMessage: (message: Message) => void) => {
     const subscription = supabase
-      .channel(`messages:${conversationId}`)
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`
+      .channel(`conversation-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          const newMessage = payload.new as Message;
-          callback(newMessage);
+          onNewMessage(payload.new as Message);
         }
       )
       .subscribe();
-
+      
     return () => {
       supabase.removeChannel(subscription);
     };
   };
 
-  const conversations = useQuery({
-    queryKey: ["conversations"],
-    queryFn: getConversations,
-  });
-
-  const conversationMutation = useMutation({
-    mutationFn: createConversation,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      toast.success("Đã tạo hội thoại mới");
-    },
-  });
-
-  const deleteConversationMutation = useMutation({
-    mutationFn: deleteConversation,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-  });
-
-  const renameConversationMutation = useMutation({
-    mutationFn: ({ id, title }: { id: string; title: string }) => 
-      renameConversation(id, title),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-  });
-
-  const messageMutation = useMutation({
-    mutationFn: addMessage,
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["messages", variables.conversationId],
-      });
-    },
-  });
-
   return {
-    conversations: conversations.data || [],
-    isLoadingConversations: conversations.isLoading,
+    conversations,
+    isLoadingConversations,
+    createConversation,
+    deleteConversation,
+    renameConversation,
     getMessages,
-    createConversation: conversationMutation.mutate,
-    deleteConversation: deleteConversationMutation.mutate,
-    renameConversation: renameConversationMutation.mutate,
-    addMessage: messageMutation.mutate,
+    addMessage,
+    updateMessage,
+    addReaction,
     subscribeToMessages,
   };
-}
+};

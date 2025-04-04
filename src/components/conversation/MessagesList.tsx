@@ -7,9 +7,16 @@ import MessageItem from "./MessageItem";
 interface MessagesListProps {
   messages: Message[];
   isLoading: boolean;
+  onUpdateMessage?: (messageId: string, content: string) => Promise<void>;
+  onAddReaction?: (messageId: string, reactionType: string) => Promise<void>;
 }
 
-const MessagesList: React.FC<MessagesListProps> = ({ messages, isLoading }) => {
+const MessagesList: React.FC<MessagesListProps> = ({ 
+  messages, 
+  isLoading,
+  onUpdateMessage,
+  onAddReaction
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when messages change
@@ -24,7 +31,12 @@ const MessagesList: React.FC<MessagesListProps> = ({ messages, isLoading }) => {
       ) : messages.length > 0 ? (
         <>
           {messages.map((message) => (
-            <MessageItem key={message.id} message={message} />
+            <MessageItem 
+              key={message.id} 
+              message={message} 
+              onUpdateMessage={onUpdateMessage}
+              onAddReaction={onAddReaction}
+            />
           ))}
           <div ref={messagesEndRef} />
         </>

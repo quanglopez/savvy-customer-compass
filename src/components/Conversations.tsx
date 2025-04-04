@@ -17,6 +17,8 @@ export function Conversations() {
     deleteConversation,
     renameConversation,
     addMessage,
+    updateMessage,
+    addReaction,
     subscribeToMessages,
   } = useConversations();
   
@@ -110,6 +112,32 @@ export function Conversations() {
       renameConversation({ id, title: newTitle });
     }
   };
+  
+  const handleUpdateMessage = async (messageId: string, content: string) => {
+    const success = await updateMessage(messageId, content);
+    if (success) {
+      // Update local state
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.id === messageId ? { ...msg, content } : msg
+        )
+      );
+      toast.success("Tin nhắn đã được cập nhật");
+    } else {
+      toast.error("Không thể cập nhật tin nhắn");
+    }
+  };
+  
+  const handleAddReaction = async (messageId: string, reactionType: string) => {
+    const success = await addReaction(messageId, reactionType);
+    if (success) {
+      toast.success("Đã thêm cảm xúc");
+      // In a real app, you would fetch the updated messages here
+      // or handle the reactions in real-time via subscription
+    } else {
+      toast.error("Không thể thêm cảm xúc");
+    }
+  };
 
   return (
     <div className="animate-fade-in h-[calc(100vh-12rem)]">
@@ -138,6 +166,8 @@ export function Conversations() {
               <MessagesList 
                 messages={messages}
                 isLoading={loading}
+                onUpdateMessage={handleUpdateMessage}
+                onAddReaction={handleAddReaction}
               />
 
               <MessageInput onSendMessage={handleSendMessage} />
