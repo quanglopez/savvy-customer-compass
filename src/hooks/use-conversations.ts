@@ -81,25 +81,51 @@ export function useConversations() {
   };
 
   const fetchMessages = async (conversationId: string) => {
-    if (!user?.id) return;
+    if (!user?.id) return [];
 
     try {
       setIsLoading(true);
       
-      // Get messages with their reactions
-      const { data, error } = await supabase
+      // Get messages
+      const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
-        .select(`
-          *,
-          reactions:message_reactions(*)
-        `)
+        .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
         
-      if (error) throw error;
+      if (messagesError) throw messagesError;
       
-      setMessages(data || []);
+      // Get reactions for all messages
+      if (messagesData && messagesData.length > 0) {
+        const messageIds = messagesData.map(msg => msg.id);
+        
+        // Use a raw query to get all reactions for these message IDs
+        const { data: reactionsData, error: reactionsError } = await supabase
+          .rpc('get_message_reactions', { message_ids: messageIds });
+
+        if (reactionsError && reactionsError.message !== 'Function "get_message_reactions" does not exist') {
+          throw reactionsError;
+        }
+      
+        // Process messages with their reactions
+        const messagesWithReactions = messagesData.map(msg => {
+          const msgReactions = (reactionsData || [])
+            .filter(r => r.message_id === msg.id);
+          
+          return {
+            ...msg,
+            reactions: msgReactions || []
+          };
+        });
+        
+        setMessages(messagesWithReactions);
+      } else {
+        setMessages([]);
+      }
+      
       setIsLoading(false);
+      
+      return messagesData || [];
     } catch (error) {
       toast({
         title: "Error fetching messages",
@@ -107,6 +133,7 @@ export function useConversations() {
         variant: "destructive",
       });
       setIsLoading(false);
+      return [];
     }
   };
 
@@ -297,54 +324,82 @@ export function useConversations() {
     if (!user?.id) return false;
     
     try {
-      // Check if user already reacted with this type
-      const message = messages.find(m => m.id === messageId);
-      const existingReaction = message?.reactions?.find(r => 
-        r.user_id === user.id && r.type === reactionType
+      // Using a raw SQL query via RPC (stored procedure) to handle the reaction logic
+      const { data, error } = await supabase.rpc(
+        'toggle_message_reaction',
+        {
+          p_message_id: messageId,
+          p_user_id: user.id,
+          p_reaction_type: reactionType
+        }
       );
       
-      if (existingReaction) {
-        // Remove the reaction if it already exists
-        await supabase
-          .from('message_reactions')
-          .delete()
-          .eq('id', existingReaction.id);
+      if (error) {
+        if (error.message.includes('Function "toggle_message_reaction" does not exist')) {
+          // Fall back to direct handling if the function doesn't exist
+          // Check if user already reacted with this type
+          let existingReaction = null;
           
-        setMessages(messages.map(m => {
-          if (m.id === messageId) {
-            return {
-              ...m,
-              reactions: m.reactions?.filter(r => r.id !== existingReaction.id) || []
-            };
+          // Find the message
+          const message = messages.find(m => m.id === messageId);
+          if (message?.reactions) {
+            existingReaction = message.reactions.find(r => 
+              r.user_id === user.id && r.type === reactionType
+            );
           }
-          return m;
-        }));
+          
+          if (existingReaction) {
+            // Remove reaction if it exists
+            const { error: deleteError } = await supabase
+              .from('message_reactions')
+              .delete()
+              .match({ id: existingReaction.id });
+              
+            if (deleteError) throw deleteError;
+            
+            // Update local state
+            setMessages(messages.map(m => {
+              if (m.id === messageId) {
+                return {
+                  ...m,
+                  reactions: (m.reactions || []).filter(r => r.id !== existingReaction!.id)
+                };
+              }
+              return m;
+            }));
+          } else {
+            // Add new reaction
+            const reactionData = {
+              message_id: messageId,
+              user_id: user.id,
+              type: reactionType
+            };
+            
+            const { data: newReaction, error: insertError } = await supabase
+              .from('message_reactions')
+              .insert(reactionData)
+              .select()
+              .single();
+              
+            if (insertError) throw insertError;
+            
+            // Update local state
+            setMessages(messages.map(m => {
+              if (m.id === messageId) {
+                const updatedReactions = [...(m.reactions || []), newReaction];
+                return { ...m, reactions: updatedReactions };
+              }
+              return m;
+            }));
+          }
+        } else {
+          throw error;
+        }
       } else {
-        // Add new reaction
-        const newReaction = {
-          message_id: messageId,
-          user_id: user.id,
-          type: reactionType
-        };
-        
-        const { data, error } = await supabase
-          .from('message_reactions')
-          .insert(newReaction)
-          .select()
-          .single();
-          
-        if (error) throw error;
-        
-        // Update local state
-        setMessages(messages.map(m => {
-          if (m.id === messageId) {
-            return {
-              ...m,
-              reactions: [...(m.reactions || []), data]
-            };
-          }
-          return m;
-        }));
+        // If the RPC call was successful, refetch the messages to get updated reactions
+        if (currentConversation) {
+          fetchMessages(currentConversation.id);
+        }
       }
       
       return true;

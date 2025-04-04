@@ -11,15 +11,14 @@ import EmptyConversation from "./conversation/EmptyConversation";
 export function Conversations() {
   const {
     conversations,
-    isLoadingConversations,
-    getMessages,
+    isLoading,
+    selectConversation,
     createConversation,
     deleteConversation,
-    renameConversation,
-    addMessage,
+    updateConversationTitle,
+    sendMessage,
     updateMessage,
     addReaction,
-    subscribeToMessages,
   } = useConversations();
   
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -34,56 +33,34 @@ export function Conversations() {
   useEffect(() => {
     if (selectedChatId) {
       setLoading(true);
-      getMessages(selectedChatId)
-        .then(loadedMessages => {
-          setMessages(loadedMessages);
-          setLoading(false);
-        })
-        .catch(() => {
-          setLoading(false);
-        });
+      selectConversation(selectedChatId);
+      setLoading(false);
     } else {
       setMessages([]);
     }
-  }, [selectedChatId, getMessages]);
+  }, [selectedChatId, selectConversation]);
 
-  // Setup real-time message subscription
+  // Setup real-time message subscription (we'll handle this differently)
   useEffect(() => {
     if (!selectedChatId) return;
     
-    const unsubscribe = subscribeToMessages(selectedChatId, (newMessage) => {
-      setMessages(prevMessages => {
-        // Check if the message already exists
-        if (prevMessages.some(msg => msg.id === newMessage.id)) {
-          return prevMessages;
-        }
-        return [...prevMessages, newMessage];
-      });
-    });
+    // This will be handled by the useConversations hook internally
     
     return () => {
-      unsubscribe();
+      // No need for cleanup as it's handled internally
     };
-  }, [selectedChatId, subscribeToMessages]);
+  }, [selectedChatId]);
 
   const handleSendMessage = async (content: string) => {
     if (!selectedChatId) return;
     
     try {
-      addMessage({
-        conversationId: selectedChatId,
-        content,
-        isUser: true,
-      });
+      sendMessage(content);
       
       // Simulate bot response (in a real app, this would be from your AI)
       setTimeout(() => {
         if (selectedChatId) {
-          addMessage({
-            conversationId: selectedChatId,
-            content: "Đây là tin nhắn tự động. Trong ứng dụng thực tế, đây sẽ là phản hồi từ trí tuệ nhân tạo.",
-            isUser: false,
-          });
+          sendMessage("Đây là tin nhắn tự động. Trong ứng dụng thực tế, đây sẽ là phản hồi từ trí tuệ nhân tạo.", false);
         }
       }, 1000);
     } catch (error) {
@@ -109,19 +86,13 @@ export function Conversations() {
 
   const handleRenameConversation = (id: string, newTitle: string) => {
     if (newTitle.trim()) {
-      renameConversation({ id, title: newTitle });
+      updateConversationTitle(id, newTitle);
     }
   };
   
   const handleUpdateMessage = async (messageId: string, content: string) => {
     const success = await updateMessage(messageId, content);
     if (success) {
-      // Update local state
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.id === messageId ? { ...msg, content } : msg
-        )
-      );
       toast.success("Tin nhắn đã được cập nhật");
     } else {
       toast.error("Không thể cập nhật tin nhắn");
@@ -132,8 +103,6 @@ export function Conversations() {
     const success = await addReaction(messageId, reactionType);
     if (success) {
       toast.success("Đã thêm cảm xúc");
-      // In a real app, you would fetch the updated messages here
-      // or handle the reactions in real-time via subscription
     } else {
       toast.error("Không thể thêm cảm xúc");
     }
@@ -146,7 +115,7 @@ export function Conversations() {
           <ConversationsList 
             conversations={conversations}
             selectedChatId={selectedChatId}
-            isLoading={isLoadingConversations}
+            isLoading={isLoading}
             onSelect={setSelectedChatId}
             onDelete={handleDeleteConversation}
             onRename={handleRenameConversation}
