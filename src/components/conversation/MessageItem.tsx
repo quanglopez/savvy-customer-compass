@@ -1,17 +1,17 @@
 
-import React, { useState, useRef, useEffect } from "react";
-import { Bot, User, ThumbsUp, Heart, Laugh, Edit, Save, X, MoreHorizontal } from "lucide-react";
+import React, { useState } from "react";
 import { Message } from "@/hooks/use-conversations";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Pencil, Check, X, Smile } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface MessageItemProps {
   message: Message;
@@ -19,165 +19,166 @@ interface MessageItemProps {
   onAddReaction?: (messageId: string, reactionType: string) => Promise<void>;
 }
 
-interface Reaction {
-  type: string;
-  icon: React.ReactNode;
-  label: string;
-}
-
-const reactions: Reaction[] = [
-  { type: "thumbs-up", icon: <ThumbsUp className="h-4 w-4" />, label: "Thích" },
-  { type: "heart", icon: <Heart className="h-4 w-4" />, label: "Yêu thích" },
-  { type: "laugh", icon: <Laugh className="h-4 w-4" />, label: "Haha" },
+const reactionEmojis = [
+  { type: "👍", label: "Thumbs up" },
+  { type: "❤️", label: "Heart" },
+  { type: "😄", label: "Smile" },
+  { type: "😮", label: "Wow" },
+  { type: "😢", label: "Sad" },
+  { type: "🔥", label: "Fire" },
 ];
 
 const MessageItem: React.FC<MessageItemProps> = ({ 
   message, 
   onUpdateMessage,
-  onAddReaction,
+  onAddReaction
 }) => {
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
-  // Set focus on the textarea when editing starts
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      // Move cursor to end of text
-      const length = textareaRef.current.value.length;
-      textareaRef.current.setSelectionRange(length, length);
-    }
-  }, [isEditing]);
-  
-  const handleEdit = () => {
+
+  const handleStartEditing = () => {
+    if (!message.is_user) return; // Only allow editing user's messages
+    setEditedContent(message.content);
     setIsEditing(true);
   };
-  
-  const handleSave = async () => {
-    if (editedContent.trim() === "") return;
-    if (onUpdateMessage) {
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedContent(message.content);
+  };
+
+  const handleSaveEdit = async () => {
+    if (onUpdateMessage && editedContent !== message.content) {
       await onUpdateMessage(message.id, editedContent);
     }
     setIsEditing(false);
   };
-  
-  const handleCancel = () => {
-    setEditedContent(message.content);
-    setIsEditing(false);
+
+  const handleReaction = async (type: string) => {
+    if (!onAddReaction) return;
+    await onAddReaction(message.id, type);
   };
-  
-  const handleReaction = async (reactionType: string) => {
-    if (onAddReaction) {
-      await onAddReaction(message.id, reactionType);
-    }
+
+  // Group reactions by type to count them
+  const reactionCounts = message.reactions?.reduce((acc, reaction) => {
+    acc[reaction.type] = (acc[reaction.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
+  // Check if the current user has reacted with a specific type
+  const hasReacted = (type: string) => {
+    return message.reactions?.some(r => r.user_id === user?.id && r.type === type) || false;
   };
-  
-  // Get the first letter of the username for avatar fallback
-  const getInitial = () => {
-    if (message.is_user && userProfile?.username) {
-      return userProfile.username.charAt(0).toUpperCase();
-    }
-    return message.is_user ? "U" : "B";
-  };
-  
+
   return (
-    <div
-      className={`flex ${
-        message.is_user ? "justify-end" : "justify-start"
-      } mb-4`}
-    >
-      <div
-        className={`max-w-[80%] rounded-lg ${
-          message.is_user
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted"
-        }`}
-      >
-        <div className="flex items-center p-2">
-          <Avatar className="h-8 w-8 mr-2">
-            {message.is_user ? (
-              <AvatarImage src={userProfile?.avatar_url || ""} />
-            ) : (
-              <AvatarImage src="/bot-avatar.png" />
+    <div className={cn(
+      "flex flex-col max-w-[80%] rounded-lg p-3 mb-2",
+      message.is_user ? "bg-primary text-primary-foreground ml-auto" : "bg-muted mr-auto"
+    )}>
+      {isEditing ? (
+        <div className="space-y-2">
+          <Textarea
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            className={cn(
+              "min-h-[60px] border-0",
+              message.is_user ? "bg-primary/80 text-primary-foreground" : "bg-muted-foreground/10"
             )}
-            <AvatarFallback>
-              {getInitial()}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium">
-                {message.is_user ? userProfile?.username || "Bạn" : "Chatbot"}
-              </span>
-              <span className="text-xs opacity-70 ml-2">
-                {new Date(message.created_at).toLocaleTimeString()}
-              </span>
-            </div>
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={handleCancelEdit}
+              className="p-1 rounded-full hover:bg-muted-foreground/20"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              className="p-1 rounded-full hover:bg-muted-foreground/20"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="relative">
+            <div className="whitespace-pre-wrap">{message.content}</div>
             
-            {isEditing ? (
-              <div className="mt-1">
-                <Textarea
-                  ref={textareaRef}
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  className="min-h-[60px] text-sm mb-2 bg-background/50 text-foreground"
-                />
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={handleCancel}
-                    className="h-8 px-2 text-xs"
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    Huỷ
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    onClick={handleSave}
-                    className="h-8 px-2 text-xs"
-                  >
-                    <Save className="h-3 w-3 mr-1" />
-                    Lưu
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <p className="whitespace-pre-wrap">{message.content}</p>
+            {message.is_user && onUpdateMessage && (
+              <button
+                onClick={handleStartEditing}
+                className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 rounded-full transition-opacity"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
             )}
           </div>
           
-          {message.is_user && !isEditing && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36">
-                <DropdownMenuItem onClick={handleEdit}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Chỉnh sửa
-                </DropdownMenuItem>
-                {reactions.map((reaction) => (
-                  <DropdownMenuItem 
-                    key={reaction.type}
-                    onClick={() => handleReaction(reaction.type)}
-                  >
-                    <div className="mr-2">{reaction.icon}</div>
-                    {reaction.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="text-xs opacity-70 mt-1">
+            {format(new Date(message.created_at), 'MMM d, h:mm a')}
+          </div>
+          
+          {/* Reaction counts display */}
+          {Object.keys(reactionCounts).length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {Object.entries(reactionCounts).map(([type, count]) => (
+                <button
+                  key={type}
+                  className={cn(
+                    "text-xs px-1.5 py-0.5 rounded-full flex items-center gap-1",
+                    hasReacted(type) 
+                      ? message.is_user 
+                        ? "bg-white/30" 
+                        : "bg-primary/20" 
+                      : message.is_user 
+                        ? "bg-white/10 hover:bg-white/30" 
+                        : "bg-muted-foreground/10 hover:bg-primary/20"
+                  )}
+                  onClick={() => handleReaction(type)}
+                >
+                  <span>{type}</span>
+                  {count > 1 && <span>{count}</span>}
+                </button>
+              ))}
+            </div>
           )}
-        </div>
-        
-        {/* Add reaction display here if needed */}
-      </div>
+          
+          {/* Reaction button */}
+          {onAddReaction && (
+            <div className="mt-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    className={cn(
+                      "text-xs flex items-center gap-1 opacity-60 hover:opacity-100",
+                      message.is_user ? "text-primary-foreground" : "text-foreground"
+                    )}
+                  >
+                    <Smile className="h-3 w-3" />
+                    <span>React</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <div className="flex p-1 gap-1">
+                    {reactionEmojis.map((emoji) => (
+                      <DropdownMenuItem 
+                        key={emoji.type} 
+                        className="cursor-pointer p-1 hover:bg-muted text-lg"
+                        onClick={() => handleReaction(emoji.type)}
+                      >
+                        {emoji.type}
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

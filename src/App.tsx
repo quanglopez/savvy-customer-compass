@@ -1,11 +1,13 @@
+
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Layout } from "@/components/Layout";
 import { Index } from "@/pages/Index";
 import { BusinessDashboard } from "@/pages/BusinessDashboard";
-import { NotFound } from "@/pages/NotFound";
+import NotFound from "@/pages/NotFound";
 import ProfilePage from "@/pages/Profile";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
   return (
@@ -20,6 +22,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+      <Toaster />
     </AuthProvider>
   );
 }
