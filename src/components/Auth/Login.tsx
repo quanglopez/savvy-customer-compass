@@ -1,8 +1,9 @@
-
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { User } from '@/types/user';
+import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useAuth } from '../../hooks/useAuth';
 import { Lock, Mail, Loader2 } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -13,17 +14,13 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Lấy đường dẫn chuyển hướng từ trạng thái location hoặc mặc định là dashboard
   const from = location.state?.from?.pathname || '/dashboard';
 
-  // Kiểm tra trạng thái xác thực và chuyển hướng nếu đã đăng nhập
   useEffect(() => {
     if (!loading && user) {
       console.log('Người dùng đã được xác thực, đang chuyển hướng...', user);
       
-      // Trì hoãn chuyển hướng một chút để đảm bảo trạng thái được cập nhật
       setTimeout(() => {
-        // Kiểm tra vai trò người dùng để xác định nơi chuyển hướng
         const userRole = user.user_metadata?.role;
         if (userRole === 'business' || userRole === 'admin') {
           navigate('/dashboard', { replace: true });
@@ -46,7 +43,6 @@ export const Login: React.FC = () => {
 
     try {
       await login(email, password);
-      // Việc chuyển hướng sẽ diễn ra trong hook useEffect khi trạng thái người dùng được cập nhật
       toast.success('Đăng nhập thành công');
     } catch (error: any) {
       console.error('Lỗi đăng nhập:', error);
@@ -56,7 +52,6 @@ export const Login: React.FC = () => {
     }
   };
 
-  // Nếu xác thực vẫn đang tải, hiển thị chỉ báo tải
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { User } from '@/types/user';
 import { 
   MessageSquare, 
   BarChart3, 
@@ -335,4 +336,4 @@ export const LandingPage: React.FC = () => {
       </footer>
     </div>
   );
-}; 
+};
