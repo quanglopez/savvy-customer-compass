@@ -72,6 +72,59 @@ export function useConversations() {
     return data;
   };
 
+  const deleteConversation = async (conversationId: string): Promise<void> => {
+    if (!user) {
+      toast.error("Bạn cần đăng nhập để xóa hội thoại");
+      throw new Error("User not authenticated");
+    }
+
+    // First delete all messages in the conversation
+    const { error: messagesError } = await supabase
+      .from("messages")
+      .delete()
+      .eq("conversation_id", conversationId);
+
+    if (messagesError) {
+      toast.error("Không thể xóa tin nhắn: " + messagesError.message);
+      throw messagesError;
+    }
+
+    // Then delete the conversation
+    const { error } = await supabase
+      .from("conversations")
+      .delete()
+      .eq("id", conversationId);
+
+    if (error) {
+      toast.error("Không thể xóa hội thoại: " + error.message);
+      throw error;
+    }
+
+    toast.success("Đã xóa hội thoại");
+  };
+
+  const renameConversation = async (conversationId: string, newTitle: string): Promise<Conversation> => {
+    if (!user) {
+      toast.error("Bạn cần đăng nhập để đổi tên hội thoại");
+      throw new Error("User not authenticated");
+    }
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .update({ title: newTitle, updated_at: new Date().toISOString() })
+      .eq("id", conversationId)
+      .select()
+      .single();
+
+    if (error) {
+      toast.error("Không thể đổi tên hội thoại: " + error.message);
+      throw error;
+    }
+
+    toast.success("Đã đổi tên hội thoại");
+    return data;
+  };
+
   const addMessage = async ({
     conversationId,
     content,
@@ -107,6 +160,29 @@ export function useConversations() {
     return data;
   };
 
+  // Set up real-time subscription for messages
+  const subscribeToMessages = (conversationId: string, callback: (message: Message) => void) => {
+    const subscription = supabase
+      .channel(`messages:${conversationId}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          const newMessage = payload.new as Message;
+          callback(newMessage);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  };
+
   const conversations = useQuery({
     queryKey: ["conversations"],
     queryFn: getConversations,
@@ -117,6 +193,21 @@ export function useConversations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       toast.success("Đã tạo hội thoại mới");
+    },
+  });
+
+  const deleteConversationMutation = useMutation({
+    mutationFn: deleteConversation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+
+  const renameConversationMutation = useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) => 
+      renameConversation(id, title),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 
@@ -134,6 +225,9 @@ export function useConversations() {
     isLoadingConversations: conversations.isLoading,
     getMessages,
     createConversation: conversationMutation.mutate,
+    deleteConversation: deleteConversationMutation.mutate,
+    renameConversation: renameConversationMutation.mutate,
     addMessage: messageMutation.mutate,
+    subscribeToMessages,
   };
 }

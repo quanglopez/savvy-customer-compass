@@ -1,17 +1,23 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   ArrowUpRight,
   Bot,
   Filter,
   MessageSquare,
+  MoreVertical,
+  PlusCircle,
   RefreshCcw,
   Search,
   Send,
+  Trash2,
+  Edit,
   User,
+  X,
+  CheckCircle,
 } from "lucide-react";
 import {
   Select,
@@ -21,133 +27,134 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ChatPreview, { ChatSession } from "./ChatPreview";
-
-const dummyChats: ChatSession[] = [
-  {
-    id: "1",
-    customer: {
-      name: "Nguyễn Văn A",
-      avatar: "",
-    },
-    status: "active",
-    lastActive: "1 phút trước",
-    platform: "web",
-    messages: [
-      {
-        id: "m1",
-        text: "Tôi cần trợ giúp về sản phẩm X",
-        sender: "user",
-        timestamp: "09:45",
-      },
-      {
-        id: "m2",
-        text: "Xin chào! Tôi rất vui được hỗ trợ bạn. Bạn cần thông tin gì về sản phẩm X?",
-        sender: "bot",
-        timestamp: "09:46",
-      },
-    ],
-  },
-  {
-    id: "2",
-    customer: {
-      name: "Trần Thị B",
-      avatar: "",
-    },
-    status: "pending",
-    lastActive: "10 phút trước",
-    platform: "facebook",
-    messages: [
-      {
-        id: "m3",
-        text: "Làm thế nào để trả hàng?",
-        sender: "user",
-        timestamp: "09:35",
-      },
-      {
-        id: "m4",
-        text: "Để trả hàng, bạn cần giữ lại biên lai và liên hệ với bộ phận CSKH trong vòng 7 ngày kể từ ngày nhận hàng.",
-        sender: "bot",
-        timestamp: "09:36",
-      },
-    ],
-  },
-  {
-    id: "3",
-    customer: {
-      name: "Lê Văn C",
-      avatar: "",
-    },
-    status: "resolved",
-    lastActive: "1 giờ trước",
-    platform: "whatsapp",
-    messages: [
-      {
-        id: "m5",
-        text: "Đơn hàng của tôi khi nào được giao?",
-        sender: "user",
-        timestamp: "08:15",
-      },
-      {
-        id: "m6",
-        text: "Đơn hàng của bạn (mã #12345) đang được vận chuyển và dự kiến sẽ được giao vào ngày mai.",
-        sender: "bot",
-        timestamp: "08:16",
-      },
-    ],
-  },
-  {
-    id: "4",
-    customer: {
-      name: "Phạm Văn D",
-      avatar: "",
-    },
-    status: "active",
-    lastActive: "5 phút trước",
-    platform: "telegram",
-    messages: [
-      {
-        id: "m7",
-        text: "Tôi muốn hủy đơn hàng",
-        sender: "user",
-        timestamp: "09:40",
-      },
-      {
-        id: "m8",
-        text: "Để hủy đơn hàng, vui lòng cho tôi biết mã đơn hàng của bạn.",
-        sender: "bot",
-        timestamp: "09:41",
-      },
-    ],
-  },
-  {
-    id: "5",
-    customer: {
-      name: "Hoàng Thị E",
-      avatar: "",
-    },
-    status: "pending",
-    lastActive: "15 phút trước",
-    platform: "web",
-    messages: [
-      {
-        id: "m9",
-        text: "Sản phẩm của tôi bị lỗi",
-        sender: "user",
-        timestamp: "09:30",
-      },
-      {
-        id: "m10",
-        text: "Tôi rất tiếc về trải nghiệm này. Xin vui lòng mô tả chi tiết vấn đề bạn đang gặp phải.",
-        sender: "bot",
-        timestamp: "09:31",
-      },
-    ],
-  },
-];
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useConversations, Message } from "@/hooks/use-conversations";
+import { toast } from "sonner";
 
 export function Conversations() {
-  const [selectedChat, setSelectedChat] = useState<ChatSession | null>(dummyChats[0]);
-  const [message, setMessage] = useState("");
+  const {
+    conversations,
+    isLoadingConversations,
+    getMessages,
+    createConversation,
+    deleteConversation,
+    renameConversation,
+    addMessage,
+    subscribeToMessages,
+  } = useConversations();
+  
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageText, setMessageText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [newConversationTitle, setNewConversationTitle] = useState("");
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Find the selected conversation
+  const selectedChat = conversations.find(c => c.id === selectedChatId);
+
+  // Load messages when a conversation is selected
+  useEffect(() => {
+    if (selectedChatId) {
+      setLoading(true);
+      getMessages(selectedChatId)
+        .then(loadedMessages => {
+          setMessages(loadedMessages);
+          setLoading(false);
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+    } else {
+      setMessages([]);
+    }
+  }, [selectedChatId, getMessages]);
+
+  // Setup real-time message subscription
+  useEffect(() => {
+    if (!selectedChatId) return;
+    
+    const unsubscribe = subscribeToMessages(selectedChatId, (newMessage) => {
+      setMessages(prevMessages => {
+        // Check if the message already exists
+        if (prevMessages.some(msg => msg.id === newMessage.id)) {
+          return prevMessages;
+        }
+        return [...prevMessages, newMessage];
+      });
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [selectedChatId, subscribeToMessages]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || !selectedChatId) return;
+    
+    try {
+      addMessage({
+        conversationId: selectedChatId,
+        content: messageText,
+        isUser: true,
+      });
+      setMessageText("");
+      
+      // Simulate bot response (in a real app, this would be from your AI)
+      setTimeout(() => {
+        addMessage({
+          conversationId: selectedChatId,
+          content: "Đây là tin nhắn tự động. Trong ứng dụng thực tế, đây sẽ là phản hồi từ trí tuệ nhân tạo.",
+          isUser: false,
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  const handleCreateConversation = () => {
+    if (!newConversationTitle.trim()) {
+      toast.error("Vui lòng nhập tiêu đề hội thoại");
+      return;
+    }
+    
+    createConversation(newConversationTitle);
+    setNewConversationTitle("");
+  };
+
+  const handleUpdateTitle = () => {
+    if (editingTitle && newTitle.trim()) {
+      renameConversation({ id: editingTitle, title: newTitle });
+      setEditingTitle(null);
+      setNewTitle("");
+    }
+  };
+
+  const filteredConversations = conversations
+    .filter(conv => conv.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className="animate-fade-in h-[calc(100vh-12rem)]">
@@ -167,15 +174,40 @@ export function Conversations() {
                   type="search"
                   placeholder="Tìm kiếm hội thoại..."
                   className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button size="icon" variant="outline">
-                <Filter className="h-4 w-4" />
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="icon" variant="outline">
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Tạo hội thoại mới</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Input
+                      placeholder="Nhập tiêu đề hội thoại..."
+                      value={newConversationTitle}
+                      onChange={(e) => setNewConversationTitle(e.target.value)}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleCreateConversation}>Tạo</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           <div className="p-3 border-b">
-            <Select defaultValue="all">
+            <Select 
+              defaultValue="all"
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger className="h-8">
                 <SelectValue placeholder="Lọc theo trạng thái" />
               </SelectTrigger>
@@ -188,16 +220,129 @@ export function Conversations() {
             </Select>
           </div>
           <div className="overflow-auto h-[calc(100vh-18rem)]">
-            <div className="p-3 space-y-3">
-              {dummyChats.map((chat) => (
-                <ChatPreview
-                  key={chat.id}
-                  chat={chat}
-                  active={selectedChat?.id === chat.id}
-                  onClick={() => setSelectedChat(chat)}
-                />
-              ))}
-            </div>
+            {isLoadingConversations ? (
+              <div className="flex justify-center p-4">Đang tải...</div>
+            ) : filteredConversations.length > 0 ? (
+              <div className="p-3 space-y-3">
+                {filteredConversations.map((conversation) => (
+                  <div 
+                    key={conversation.id} 
+                    className={`p-3 rounded-md cursor-pointer border transition-all flex justify-between items-center ${
+                      selectedChatId === conversation.id
+                        ? "bg-primary/10 border-primary"
+                        : "hover:bg-muted border-transparent"
+                    }`}
+                    onClick={() => setSelectedChatId(conversation.id)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      {editingTitle === conversation.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                          />
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateTitle();
+                            }}
+                          >
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingTitle(null);
+                            }}
+                          >
+                            <X className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <h4 className="font-medium truncate">{conversation.title}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(conversation.updated_at).toLocaleString()}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    
+                    {editingTitle !== conversation.id && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              setEditingTitle(conversation.id);
+                              setNewTitle(conversation.title);
+                            }}>
+                              <Edit className="h-4 w-4 mr-2" /> Đổi tên
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-500"
+                              onClick={() => {
+                                if (confirm("Bạn có chắc chắn muốn xóa hội thoại này?")) {
+                                  deleteConversation(conversation.id);
+                                  if (selectedChatId === conversation.id) {
+                                    setSelectedChatId(null);
+                                  }
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" /> Xóa
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                <MessageSquare className="h-12 w-12 text-muted-foreground mb-2" />
+                {searchQuery ? (
+                  <p className="text-muted-foreground">Không tìm thấy hội thoại phù hợp</p>
+                ) : (
+                  <>
+                    <p className="text-muted-foreground mb-4">Chưa có hội thoại nào</p>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <PlusCircle className="h-4 w-4 mr-2" /> Tạo hội thoại
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Tạo hội thoại mới</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <Input
+                            placeholder="Nhập tiêu đề hội thoại..."
+                            value={newConversationTitle}
+                            onChange={(e) => setNewConversationTitle(e.target.value)}
+                          />
+                        </div>
+                        <DialogFooter>
+                          <Button onClick={handleCreateConversation}>Tạo</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -207,82 +352,112 @@ export function Conversations() {
               <div className="p-4 border-b flex justify-between items-center">
                 <div className="flex items-center">
                   <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium mr-3">
-                    {selectedChat.customer.name.substring(0, 2).toUpperCase()}
+                    {selectedChat.title.substring(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="font-medium">{selectedChat.customer.name}</h3>
+                    <h3 className="font-medium">{selectedChat.title}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {selectedChat.lastActive} • {mapPlatform(selectedChat.platform)}
+                      {new Date(selectedChat.updated_at).toLocaleString()}
                     </p>
                   </div>
                 </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
-                    <ArrowUpRight className="mr-2 h-4 w-4" />
-                    Chuyển tiếp
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      setEditingTitle(selectedChat.id);
+                      setNewTitle(selectedChat.title);
+                    }}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Đổi tên
                   </Button>
-                  <Select defaultValue={selectedChat.status}>
-                    <SelectTrigger className="h-9 w-40">
-                      <SelectValue placeholder="Trạng thái" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Đang hoạt động</SelectItem>
-                      <SelectItem value="pending">Đang chờ</SelectItem>
-                      <SelectItem value="resolved">Đã giải quyết</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="text-red-500"
+                    onClick={() => {
+                      if (confirm("Bạn có chắc chắn muốn xóa hội thoại này?")) {
+                        deleteConversation(selectedChat.id);
+                        setSelectedChatId(null);
+                      }
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Xóa
+                  </Button>
                 </div>
               </div>
 
               <div className="flex-grow overflow-auto p-4 space-y-4">
-                {selectedChat.messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${
-                      msg.sender === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg ${
-                        msg.sender === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <div className="flex items-center mb-1">
-                        <div className="flex items-center">
-                          {msg.sender === "user" ? (
-                            <User className="h-3 w-3 mr-1" />
-                          ) : (
-                            <Bot className="h-3 w-3 mr-1" />
-                          )}
-                          <span className="text-xs font-medium">
-                            {msg.sender === "user"
-                              ? selectedChat.customer.name
-                              : "Chatbot"}
-                          </span>
+                {loading ? (
+                  <div className="flex justify-center p-4">Đang tải tin nhắn...</div>
+                ) : messages.length > 0 ? (
+                  <>
+                    {messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${
+                          msg.is_user ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[80%] p-3 rounded-lg ${
+                            msg.is_user
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
+                          }`}
+                        >
+                          <div className="flex items-center mb-1">
+                            <div className="flex items-center">
+                              {msg.is_user ? (
+                                <User className="h-3 w-3 mr-1" />
+                              ) : (
+                                <Bot className="h-3 w-3 mr-1" />
+                              )}
+                              <span className="text-xs font-medium">
+                                {msg.is_user ? "Bạn" : "Chatbot"}
+                              </span>
+                            </div>
+                            <span className="text-xs ml-2 opacity-70">
+                              {new Date(msg.created_at).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
                         </div>
-                        <span className="text-xs ml-2 opacity-70">
-                          {msg.timestamp}
-                        </span>
                       </div>
-                      <p>{msg.text}</p>
-                    </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <MessageSquare className="h-12 w-12 text-muted-foreground mb-2" />
+                    <p className="text-xl font-medium mb-2">Bắt đầu cuộc trò chuyện</p>
+                    <p className="text-muted-foreground mb-4">
+                      Hãy gửi tin nhắn đầu tiên để bắt đầu cuộc trò chuyện
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
 
               <div className="p-4 border-t">
                 <div className="flex space-x-2">
                   <Input
                     placeholder="Nhập tin nhắn..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
                     className="flex-grow"
                   />
                   <Button
-                    disabled={!message.trim()}
-                    onClick={() => setMessage("")}
+                    disabled={!messageText.trim()}
+                    onClick={handleSendMessage}
                   >
                     <Send className="mr-2 h-4 w-4" />
                     Gửi
@@ -295,9 +470,31 @@ export function Conversations() {
               <div className="text-center">
                 <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                 <h3 className="text-lg font-medium">Không có hội thoại nào được chọn</h3>
-                <p className="text-muted-foreground">
-                  Chọn một hội thoại từ danh sách bên trái để bắt đầu.
+                <p className="text-muted-foreground mb-4">
+                  Chọn một hội thoại từ danh sách bên trái hoặc tạo hội thoại mới để bắt đầu.
                 </p>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <PlusCircle className="h-4 w-4 mr-2" /> Tạo hội thoại mới
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Tạo hội thoại mới</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <Input
+                        placeholder="Nhập tiêu đề hội thoại..."
+                        value={newConversationTitle}
+                        onChange={(e) => setNewConversationTitle(e.target.value)}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleCreateConversation}>Tạo</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           )}
@@ -305,16 +502,6 @@ export function Conversations() {
       </div>
     </div>
   );
-}
-
-function mapPlatform(platform: string): string {
-  const platforms: Record<string, string> = {
-    web: "Website",
-    facebook: "Facebook",
-    whatsapp: "WhatsApp",
-    telegram: "Telegram",
-  };
-  return platforms[platform] || platform;
 }
 
 export default Conversations;
