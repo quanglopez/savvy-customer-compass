@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ export function Index() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!loading && user) {
       navigate("/");
     }
