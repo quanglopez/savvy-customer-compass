@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { User, Bot } from 'lucide-react';
@@ -19,13 +20,13 @@ export const Message: React.FC<MessageProps> = ({
     <div
       className={`flex ${
         isCurrentUser ? 'justify-end' : 'justify-start'
-      } mb-4`}
+      } mb-4 animate-fade-in`}
     >
       {!isCurrentUser && (
         <div className="flex-shrink-0 mr-3">
           <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
             isBot ? 'bg-blue-100' : 'bg-gray-200'
-          }`}>
+          } shadow-sm`}>
             {isBot ? (
               <Bot className="h-5 w-5 text-blue-600" />
             ) : (
@@ -35,13 +36,13 @@ export const Message: React.FC<MessageProps> = ({
         </div>
       )}
       
-      <div className="flex flex-col">
+      <div className="flex flex-col max-w-md">
         <div
           className={`py-3 px-4 rounded-lg ${
             isCurrentUser
-              ? 'bg-blue-600 text-white rounded-br-none'
-              : 'bg-gray-100 text-gray-800 rounded-bl-none'
-          } max-w-md break-words`}
+              ? 'bg-blue-600 text-white rounded-br-none shadow-md'
+              : 'bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-100'
+          } break-words`}
         >
           {content}
         </div>
@@ -56,7 +57,7 @@ export const Message: React.FC<MessageProps> = ({
       
       {isCurrentUser && (
         <div className="flex-shrink-0 ml-3">
-          <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center shadow-sm">
             <User className="h-5 w-5 text-white" />
           </div>
         </div>
