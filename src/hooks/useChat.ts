@@ -46,7 +46,8 @@ export const useChat = ({ chatId, businessId }: UseChatProps = {}) => {
         const formattedMessages: ChatMessage[] = data.map(msg => ({
           id: msg.id,
           content: msg.content,
-          sender: msg.sender || user.id,
+          // Since 'sender' doesn't exist in the database, determine it from is_user
+          sender: msg.is_user ? (user?.id || '') : 'bot',
           timestamp: new Date(msg.created_at),
           isBot: !msg.is_user,
           status: 'sent', // Giả định tất cả tin nhắn đã được gửi
@@ -94,7 +95,7 @@ export const useChat = ({ chatId, businessId }: UseChatProps = {}) => {
           const formattedMessage: ChatMessage = {
             id: newMessage.id,
             content: newMessage.content,
-            sender: newMessage.sender || (newMessage.is_user ? user?.id : 'bot'),
+            sender: newMessage.is_user ? (user?.id || '') : 'bot',
             timestamp: new Date(newMessage.created_at),
             isBot: !newMessage.is_user,
             status: 'sent',
@@ -140,7 +141,8 @@ export const useChat = ({ chatId, businessId }: UseChatProps = {}) => {
     
     try {
       // Nếu chưa có cuộc trò chuyện, tạo mới
-      if (!currentChatId) {
+      let newChatId = currentChatId;
+      if (!newChatId) {
         if (!businessId) {
           throw new Error('Thiếu thông tin doanh nghiệp');
         }
@@ -159,7 +161,8 @@ export const useChat = ({ chatId, businessId }: UseChatProps = {}) => {
           
         if (chatError) throw chatError;
         
-        setCurrentChatId(chatData.id);
+        newChatId = chatData.id;
+        setCurrentChatId(newChatId);
       }
       
       // Gửi tin nhắn thông qua Supabase
@@ -168,7 +171,7 @@ export const useChat = ({ chatId, businessId }: UseChatProps = {}) => {
         .insert([
           {
             content,
-            conversation_id: currentChatId || chatData.id,
+            conversation_id: newChatId,
             is_user: true,
           }
         ])
@@ -191,11 +194,11 @@ export const useChat = ({ chatId, businessId }: UseChatProps = {}) => {
       );
       
       // Cập nhật thời gian của cuộc trò chuyện
-      if (currentChatId) {
+      if (newChatId) {
         await supabase
           .from('conversations')
           .update({ updated_at: new Date().toISOString() })
-          .eq('id', currentChatId);
+          .eq('id', newChatId);
       }
       
       return data.id;
