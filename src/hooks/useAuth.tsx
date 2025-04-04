@@ -1,69 +1,61 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { toast } from 'sonner';
+
+import React, { useState, useEffect, createContext, useContext } from 'react';
 
 interface User {
   id: string;
   email: string;
-  businessName?: string;
   role: 'admin' | 'business' | 'user';
+  businessName?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, businessName?: string, accountType?: 'user' | 'business') => Promise<void>;
+  register: (email: string, password: string, businessName?: string, role?: string) => Promise<void>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Check if user is already logged in
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      
-      if (token) {
-        try {
-          const response = await fetch(`${API_URL}/api/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          
-          if (response.ok) {
-            const userData = await response.json();
-            setUser({
-              id: userData._id,
-              email: userData.email,
-              businessName: userData.businessName,
-              role: userData.role,
-            });
-          } else {
-            // If token is invalid, clear it
-            localStorage.removeItem('token');
-          }
-        } catch (error) {
-          console.error('Error checking authentication:', error);
-          localStorage.removeItem('token');
-        }
-      }
-      
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchUser(token);
+    } else {
       setLoading(false);
-    };
-    
-    checkAuth();
+    }
   }, []);
+
+  const fetchUser = async (token: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user');
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      localStorage.removeItem('token');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -74,95 +66,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
         body: JSON.stringify({ email, password }),
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error('Invalid credentials');
       }
-      
+
       const data = await response.json();
-      
-      // Save token
       localStorage.setItem('token', data.token);
-      
-      // Set user data
-      setUser({
-        id: data.user._id,
-        email: data.user.email,
-        businessName: data.user.businessName,
-        role: data.user.role,
-      });
-      
-      return;
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+      setUser(data.user);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      throw err;
     }
   };
 
-  const register = async (
-    email: string,
-    password: string,
-    businessName?: string,
-    accountType: 'user' | 'business' = 'user'
-  ) => {
+  const register = async (email: string, password: string, businessName?: string, role?: string) => {
     try {
-      const userData = {
-        email,
-        password,
-        ...(businessName && { businessName }),
-        role: accountType,
-      };
-      
       const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({ email, password, businessName, role }),
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+        throw new Error('Registration failed');
       }
-      
+
       const data = await response.json();
-      
-      // Save token
       localStorage.setItem('token', data.token);
-      
-      // Set user data
-      setUser({
-        id: data.user._id,
-        email: data.user.email,
-        businessName: data.user.businessName,
-        role: data.user.role,
-      });
-      
-      return;
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
+      setUser(data.user);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      throw err;
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
-    toast.success('Logged out successfully');
-  };
-
-  const value = {
-    user,
-    loading,
-    login,
-    register,
-    logout,
+    setError(null);
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, error, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -170,10 +120,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  
   return context;
-}; 
+};
