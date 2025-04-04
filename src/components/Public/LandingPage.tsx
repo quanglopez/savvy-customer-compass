@@ -1,336 +1,501 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { User } from '@/types/user';
 import { 
   MessageSquare, 
   BarChart3, 
-  Bell, 
-  Zap, 
-  Shield, 
-  Users,
-  Mail
+  Users, 
+  Code, 
+  Check, 
+  Clock, 
+  Headphones,
+  Globe,
+  Shield,
+  Zap
 } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+
+const features = [
+  {
+    icon: MessageSquare,
+    title: 'Chat thời gian thực',
+    description: 'Tương tác với khách hàng của bạn trong thời gian thực với giao diện trò chuyện trực quan và dễ sử dụng.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Phân tích chi tiết',
+    description: 'Hiểu rõ khách hàng của bạn với các báo cáo phân tích chi tiết và thông tin chi tiết về hành vi người dùng.',
+  },
+  {
+    icon: Users,
+    title: 'Quản lý khách hàng',
+    description: 'Quản lý tất cả khách hàng và cuộc trò chuyện từ một bảng điều khiển trung tâm duy nhất.',
+  },
+  {
+    icon: Code,
+    title: 'Tích hợp linh hoạt',
+    description: 'Dễ dàng tích hợp với trang web, ứng dụng di động hoặc hệ thống CRM hiện có của bạn.',
+  },
+  {
+    icon: Headphones,
+    title: 'Hỗ trợ 24/7',
+    description: 'Cung cấp hỗ trợ 24/7 cho khách hàng của bạn với công cụ hỗ trợ và chatbot được hỗ trợ bởi AI.',
+  },
+  {
+    icon: Shield,
+    title: 'Bảo mật tối ưu',
+    description: 'Dữ liệu của bạn luôn an toàn với mã hóa đầu cuối và các biện pháp bảo mật tiên tiến.',
+  },
+];
+
+const steps = [
+  {
+    number: 1,
+    title: 'Đăng ký',
+    description: 'Tạo tài khoản miễn phí trong vài phút để bắt đầu.',
+  },
+  {
+    number: 2,
+    title: 'Tùy chỉnh',
+    description: 'Tùy chỉnh giao diện trò chuyện để phù hợp với thương hiệu của bạn.',
+  },
+  {
+    number: 3,
+    title: 'Tích hợp',
+    description: 'Thêm đoạn mã vào trang web của bạn hoặc tích hợp với ứng dụng.',
+  },
+  {
+    number: 4,
+    title: 'Bắt đầu trò chuyện',
+    description: 'Bắt đầu trò chuyện với khách hàng và phát triển doanh nghiệp.',
+  },
+];
+
+const pricingPlans = [
+  {
+    name: 'Cơ bản',
+    price: '299k',
+    description: 'Lý tưởng cho doanh nghiệp nhỏ mới bắt đầu.',
+    features: [
+      '500 tin nhắn/tháng',
+      '2 tài khoản người dùng',
+      'Hỗ trợ email',
+      'Phân tích cơ bản',
+    ],
+    link: '/register?plan=basic',
+  },
+  {
+    name: 'Chuyên nghiệp',
+    price: '599k',
+    description: 'Dành cho doanh nghiệp đang phát triển.',
+    features: [
+      '2,000 tin nhắn/tháng',
+      '5 tài khoản người dùng',
+      'Hỗ trợ ưu tiên',
+      'Phân tích nâng cao',
+      'Tích hợp AI chatbot',
+    ],
+    link: '/register?plan=pro',
+    popular: true,
+  },
+  {
+    name: 'Doanh nghiệp',
+    price: 'Liên hệ',
+    description: 'Giải pháp tùy chỉnh cho doanh nghiệp lớn.',
+    features: [
+      'Không giới hạn tin nhắn',
+      'Không giới hạn người dùng',
+      'Quản lý tài khoản chuyên dụng',
+      'API tùy chỉnh',
+      'Tích hợp nâng cao',
+    ],
+    link: '/contact',
+  },
+];
 
 export const LandingPage: React.FC = () => {
-  const { user } = useAuth();
-
-  const features = [
-    {
-      icon: <MessageSquare className="h-10 w-10 text-blue-500" />,
-      title: 'Real-time Chat',
-      description: 'Connect with your customers in real-time through a seamless chat interface.'
-    },
-    {
-      icon: <Bell className="h-10 w-10 text-blue-500" />,
-      title: 'Instant Notifications',
-      description: 'Never miss a customer inquiry with our powerful notification system.'
-    },
-    {
-      icon: <BarChart3 className="h-10 w-10 text-blue-500" />,
-      title: 'Analytics Dashboard',
-      description: 'Gain valuable insights into customer conversations and behavior.'
-    },
-    {
-      icon: <Mail className="h-10 w-10 text-blue-500" />,
-      title: 'Email Notifications',
-      description: 'Stay updated with email alerts for new messages and chat sessions.'
-    },
-    {
-      icon: <Zap className="h-10 w-10 text-blue-500" />,
-      title: 'Lightning Fast',
-      description: 'Our platform is built for speed, ensuring smooth communication.'
-    },
-    {
-      icon: <Shield className="h-10 w-10 text-blue-500" />,
-      title: 'Secure & Private',
-      description: 'Your data is protected with enterprise-grade security measures.'
-    },
-  ];
-
-  const testimonials = [
-    {
-      quote: "Savvy Customer Compass transformed how we handle customer support. It's intuitive, fast, and our customers love it!",
-      author: "Sarah Johnson",
-      role: "Customer Support Manager",
-      company: "TechSolutions Inc."
-    },
-    {
-      quote: "The analytics dashboard gives us incredible insights into customer needs. We've improved our response time by 45%.",
-      author: "Michael Chen",
-      role: "Operations Director",
-      company: "Global Retail Group"
-    },
-    {
-      quote: "Setting up was a breeze. Within an hour, we were chatting with customers and providing better service than ever before.",
-      author: "Emily Rodriguez",
-      role: "Startup Founder",
-      company: "InnovateCo"
-    }
-  ];
-
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <MessageSquare className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">Savvy Customer Compass</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <Link
-                  to={user.role === 'business' ? '/dashboard' : '/chat'}
-                  className="px-4 py-2 rounded-md text-blue-600 font-medium hover:bg-blue-50"
-                >
-                  {user.role === 'business' ? 'Go to Dashboard' : 'Start Chatting'}
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="px-4 py-2 rounded-md text-blue-600 font-medium hover:bg-blue-50"
-                  >
-                    Log in
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700"
-                  >
-                    Sign up
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center">
-            <div className="lg:w-1/2 mb-10 lg:mb-0">
-              <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
-                Connect with your customers like never before
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
+        <div className="container mx-auto px-4 py-20 md:py-32">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="md:w-1/2 mb-10 md:mb-0">
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">
+                Nền tảng trò chuyện trực tuyến thông minh cho doanh nghiệp
               </h1>
-              <p className="mt-4 text-lg text-blue-100">
-                Savvy Customer Compass provides powerful chat tools to help businesses communicate effectively with their customers in real-time.
+              <p className="text-xl mb-8 text-blue-100">
+                Tăng tương tác với khách hàng, tiết kiệm thời gian và nâng cao hiệu quả kinh doanh với nền tảng AI hỗ trợ trò chuyện của chúng tôi.
               </p>
-              <div className="mt-8 flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
-                <Link
-                  to="/register"
-                  className="px-8 py-3 rounded-md bg-white text-blue-700 font-medium hover:bg-gray-100 text-center"
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link 
+                  to="/register" 
+                  className="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-md font-medium text-center transition-colors"
                 >
-                  Get Started
+                  Dùng thử miễn phí
                 </Link>
-                <a
-                  href="#features"
-                  className="px-8 py-3 rounded-md border border-white text-white font-medium hover:bg-blue-500 text-center"
+                <Link 
+                  to="/login" 
+                  className="bg-transparent border border-white text-white hover:bg-white/10 px-6 py-3 rounded-md font-medium text-center transition-colors"
                 >
-                  Learn More
-                </a>
+                  Đăng nhập
+                </Link>
               </div>
             </div>
-            <div className="lg:w-1/2 lg:pl-10">
-              <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                <div className="bg-gray-100 px-4 py-2 flex items-center">
-                  <div className="flex space-x-1">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  </div>
-                  <div className="ml-2 text-sm font-medium text-gray-500">Live Chat</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex flex-col space-y-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <Users className="h-6 w-6 text-gray-500" />
-                        </div>
-                      </div>
-                      <div className="ml-3 bg-gray-100 rounded-lg py-2 px-3 max-w-xs">
-                        <p className="text-sm text-gray-900">Hello! How can I help you today?</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start justify-end">
-                      <div className="bg-blue-500 rounded-lg py-2 px-3 max-w-xs">
-                        <p className="text-sm text-white">I'm looking for information about your services.</p>
-                      </div>
-                      <div className="ml-3 flex-shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-blue-200 flex items-center justify-center">
-                          <User className="h-6 w-6 text-blue-700" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <Users className="h-6 w-6 text-gray-500" />
-                        </div>
-                      </div>
-                      <div className="ml-3 bg-gray-100 rounded-lg py-2 px-3 max-w-xs">
-                        <p className="text-sm text-gray-900">I'd be happy to provide more information. Our services include...</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 relative">
-                    <input
-                      type="text"
-                      placeholder="Type your message..."
-                      className="w-full p-2 border rounded-md pr-10"
-                      disabled
-                    />
-                    <button className="absolute right-2 top-2 text-blue-500">
-                      <MessageSquare className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
+            <div className="md:w-1/2">
+              <div className="bg-white p-4 rounded-lg shadow-xl">
+                <img 
+                  src="/placeholder.svg" 
+                  alt="Chat Platform Demo" 
+                  className="w-full rounded"
+                />
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Powerful Features for Your Business
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              Giải pháp chat toàn diện
             </h2>
-            <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
-              Everything you need to provide exceptional customer support.
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Chúng tôi cung cấp một nền tảng mạnh mẽ giúp doanh nghiệp của bạn giao tiếp hiệu quả với khách hàng
             </p>
           </div>
+          
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                <div className="mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+            {/* Feature 1 */}
+            <div className="bg-white rounded-lg p-6 shadow-md transition-transform hover:translate-y-[-5px]">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <MessageSquare className="w-6 h-6 text-blue-600" />
               </div>
-            ))}
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Chat thời gian thực</h3>
+              <p className="text-gray-600">
+                Tương tác với khách hàng của bạn trong thời gian thực với giao diện trò chuyện trực quan và dễ sử dụng.
+              </p>
+            </div>
+            
+            {/* Feature 2 */}
+            <div className="bg-white rounded-lg p-6 shadow-md transition-transform hover:translate-y-[-5px]">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Phân tích chi tiết</h3>
+              <p className="text-gray-600">
+                Hiểu rõ khách hàng của bạn với các báo cáo phân tích chi tiết và thông tin chi tiết về hành vi người dùng.
+              </p>
+            </div>
+            
+            {/* Feature 3 */}
+            <div className="bg-white rounded-lg p-6 shadow-md transition-transform hover:translate-y-[-5px]">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Quản lý khách hàng</h3>
+              <p className="text-gray-600">
+                Quản lý tất cả khách hàng và cuộc trò chuyện từ một bảng điều khiển trung tâm duy nhất.
+              </p>
+            </div>
+            
+            {/* Feature 4 */}
+            <div className="bg-white rounded-lg p-6 shadow-md transition-transform hover:translate-y-[-5px]">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Code className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Tích hợp linh hoạt</h3>
+              <p className="text-gray-600">
+                Dễ dàng tích hợp với trang web, ứng dụng di động hoặc hệ thống CRM hiện có của bạn.
+              </p>
+            </div>
+            
+            {/* Feature 5 */}
+            <div className="bg-white rounded-lg p-6 shadow-md transition-transform hover:translate-y-[-5px]">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Headphones className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Hỗ trợ 24/7</h3>
+              <p className="text-gray-600">
+                Cung cấp hỗ trợ 24/7 cho khách hàng của bạn với công cụ hỗ trợ và chatbot được hỗ trợ bởi AI.
+              </p>
+            </div>
+            
+            {/* Feature 6 */}
+            <div className="bg-white rounded-lg p-6 shadow-md transition-transform hover:translate-y-[-5px]">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Bảo mật tối ưu</h3>
+              <p className="text-gray-600">
+                Dữ liệu của bạn luôn an toàn với mã hóa đầu cuối và các biện pháp bảo mật tiên tiến.
+              </p>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Testimonials Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* How It Works Section */}
+      <div className="py-20 bg-white">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              What Our Customers Say
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              Cách thức hoạt động
             </h2>
-            <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
-              Businesses of all sizes are improving their customer communication with Savvy Customer Compass.
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Chỉ với vài bước đơn giản, bạn có thể bắt đầu tăng cường giao tiếp với khách hàng của mình
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 p-6 rounded-lg shadow-sm">
-                <div className="flex items-center mb-4">
-                  <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                    <User className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="ml-4">
-                    <h4 className="text-lg font-bold text-gray-900">{testimonial.author}</h4>
-                    <p className="text-sm text-gray-600">{testimonial.role}, {testimonial.company}</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 italic">"{testimonial.quote}"</p>
+          
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Step 1 */}
+            <div className="flex-1 text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-blue-600 text-xl font-bold">1</span>
               </div>
-            ))}
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Đăng ký</h3>
+              <p className="text-gray-600">
+                Tạo tài khoản miễn phí trong vài phút để bắt đầu.
+              </p>
+            </div>
+            
+            {/* Step 2 */}
+            <div className="flex-1 text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-blue-600 text-xl font-bold">2</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Tùy chỉnh</h3>
+              <p className="text-gray-600">
+                Tùy chỉnh giao diện trò chuyện để phù hợp với thương hiệu của bạn.
+              </p>
+            </div>
+            
+            {/* Step 3 */}
+            <div className="flex-1 text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-blue-600 text-xl font-bold">3</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Tích hợp</h3>
+              <p className="text-gray-600">
+                Thêm đoạn mã vào trang web của bạn hoặc tích hợp với ứng dụng.
+              </p>
+            </div>
+            
+            {/* Step 4 */}
+            <div className="flex-1 text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-blue-600 text-xl font-bold">4</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Bắt đầu trò chuyện</h3>
+              <p className="text-gray-600">
+                Bắt đầu trò chuyện với khách hàng và phát triển doanh nghiệp.
+              </p>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-            Ready to transform your customer support?
-          </h2>
-          <p className="mt-4 max-w-2xl text-xl text-blue-100 mx-auto">
-            Join thousands of businesses already using Savvy Customer Compass.
-          </p>
-          <div className="mt-8">
-            <Link
-              to="/register"
-              className="px-8 py-3 rounded-md bg-white text-blue-700 font-medium hover:bg-gray-100 inline-block"
-            >
-              Get Started for Free
-            </Link>
+      {/* Pricing Section */}
+      <div className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              Gói dịch vụ phù hợp cho mọi nhu cầu
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Chọn gói phù hợp với quy mô và nhu cầu doanh nghiệp của bạn
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Basic Plan */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">Cơ bản</h3>
+                <div className="text-3xl font-bold text-gray-900 mb-4">
+                  299k <span className="text-base font-normal text-gray-600">/tháng</span>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Lý tưởng cho doanh nghiệp nhỏ mới bắt đầu.
+                </p>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>500 tin nhắn/tháng</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>2 tài khoản người dùng</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Hỗ trợ email</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Phân tích cơ bản</span>
+                  </li>
+                </ul>
+                <Link 
+                  to="/register?plan=basic" 
+                  className="block w-full bg-blue-600 text-white text-center py-3 rounded-md font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Bắt đầu
+                </Link>
+              </div>
+            </div>
+            
+            {/* Pro Plan */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden border-2 border-blue-500 transform scale-105">
+              <div className="bg-blue-500 text-white text-center py-2 text-sm font-medium">
+                PHỔ BIẾN NHẤT
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">Chuyên nghiệp</h3>
+                <div className="text-3xl font-bold text-gray-900 mb-4">
+                  599k <span className="text-base font-normal text-gray-600">/tháng</span>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Dành cho doanh nghiệp đang phát triển.
+                </p>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>2,000 tin nhắn/tháng</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>5 tài khoản người dùng</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Hỗ trợ ưu tiên</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Phân tích nâng cao</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Tích hợp AI chatbot</span>
+                  </li>
+                </ul>
+                <Link 
+                  to="/register?plan=pro" 
+                  className="block w-full bg-blue-600 text-white text-center py-3 rounded-md font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Bắt đầu
+                </Link>
+              </div>
+            </div>
+            
+            {/* Enterprise Plan */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">Doanh nghiệp</h3>
+                <div className="text-3xl font-bold text-gray-900 mb-4">
+                  Liên hệ <span className="text-base font-normal text-gray-600">để báo giá</span>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Giải pháp tùy chỉnh cho doanh nghiệp lớn.
+                </p>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Không giới hạn tin nhắn</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Không giới hạn người dùng</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Quản lý tài khoản chuyên dụng</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>API tùy chỉnh</span>
+                  </li>
+                  <li className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 text-green-500 mr-2" />
+                    <span>Tích hợp nâng cao</span>
+                  </li>
+                </ul>
+                <Link 
+                  to="/contact" 
+                  className="block w-full bg-gray-800 text-white text-center py-3 rounded-md font-medium hover:bg-gray-900 transition-colors"
+                >
+                  Liên hệ với chúng tôi
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Footer */}
       <footer className="bg-gray-800 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Company Info */}
             <div>
-              <div className="flex items-center">
-                <MessageSquare className="h-8 w-8 text-blue-400" />
-                <span className="ml-2 text-xl font-bold">Savvy Customer Compass</span>
-              </div>
-              <p className="mt-4 text-gray-400">
-                Helping businesses connect with their customers through powerful chat tools.
+              <h3 className="text-lg font-bold mb-4">ChatApp</h3>
+              <p className="text-gray-400 mb-4">
+                Nền tảng trò chuyện trực tuyến thông minh giúp doanh nghiệp kết nối với khách hàng hiệu quả hơn.
               </p>
+              <div className="flex space-x-4">
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <i className="fab fa-facebook"></i>
+                </a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <i className="fab fa-twitter"></i>
+                </a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <i className="fab fa-instagram"></i>
+                </a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <i className="fab fa-linkedin"></i>
+                </a>
+              </div>
             </div>
+            
+            {/* Quick Links */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Product</h3>
+              <h3 className="text-lg font-bold mb-4">Liên kết nhanh</h3>
               <ul className="space-y-2">
-                <li><a href="#features" className="text-gray-400 hover:text-white">Features</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Pricing</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Use Cases</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Integrations</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Trang chủ</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Tính năng</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Bảng giá</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Về chúng tôi</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Liên hệ</a></li>
               </ul>
             </div>
+            
+            {/* Legal */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
+              <h3 className="text-lg font-bold mb-4">Pháp lý</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white">Documentation</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Blog</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Support</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">API</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Điều khoản sử dụng</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Chính sách bảo mật</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Cookie Policy</a></li>
               </ul>
             </div>
+            
+            {/* Contact */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Company</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white">About Us</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Careers</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Contact</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white">Privacy Policy</a></li>
-              </ul>
+              <h3 className="text-lg font-bold mb-4">Liên hệ</h3>
+              <address className="text-gray-400 not-italic">
+                <p>123 Đường Nguyễn Huệ</p>
+                <p>Quận 1, TP. Hồ Chí Minh</p>
+                <p>Việt Nam</p>
+                <p className="mt-2">Email: info@chatapp.vn</p>
+                <p>Phone: (84) 28 1234 5678</p>
+              </address>
             </div>
           </div>
-          <div className="mt-12 border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400">© 2023 Savvy Customer Compass. All rights reserved.</p>
-            <div className="mt-4 md:mt-0 flex space-x-6">
-              <a href="#" className="text-gray-400 hover:text-white">
-                <span className="sr-only">Facebook</span>
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-                </svg>
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white">
-                <span className="sr-only">Twitter</span>
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                </svg>
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white">
-                <span className="sr-only">LinkedIn</span>
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fillRule="evenodd" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" clipRule="evenodd" />
-                </svg>
-              </a>
-            </div>
+          
+          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+            <p>© 2025 ChatApp. Tất cả các quyền được bảo lưu.</p>
           </div>
         </div>
       </footer>
