@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type Conversation = {
   id: string;
@@ -20,6 +21,7 @@ export type Message = {
 
 export function useConversations() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const getConversations = async (): Promise<Conversation[]> => {
     const { data, error } = await supabase
@@ -51,9 +53,14 @@ export function useConversations() {
   };
 
   const createConversation = async (title: string): Promise<Conversation> => {
+    if (!user) {
+      toast.error("Bạn cần đăng nhập để tạo hội thoại");
+      throw new Error("User not authenticated");
+    }
+
     const { data, error } = await supabase
       .from("conversations")
-      .insert([{ title }])
+      .insert([{ title, user_id: user.id }])
       .select()
       .single();
 
