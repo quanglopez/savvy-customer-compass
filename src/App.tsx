@@ -1,75 +1,56 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { AuthProvider } from './hooks/useAuth';
+import { PrivateRoute } from './components/Auth/PrivateRoute';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import Dashboard from "./components/Dashboard";
-import ChatbotBuilder from "./components/ChatbotBuilder";
-import Conversations from "./components/Conversations";
-import Analytics from "./components/Analytics";
-import Settings from "./components/Settings";
-import Layout from "./components/Layout";
+// Auth components
+import { Login } from './components/Auth/Login';
+import { Register } from './components/Auth/Register';
 
-const queryClient = new QueryClient();
+// Dashboard components
+import { DashboardLayout } from './components/Dashboard/DashboardLayout';
+import { ChatDashboard } from './components/Dashboard/ChatDashboard';
+import { AnalyticsDashboard } from './components/Dashboard/AnalyticsDashboard';
+import { SettingsDashboard } from './components/Dashboard/SettingsDashboard';
+import { CustomersDashboard } from './components/Dashboard/CustomersDashboard';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/landing" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Layout title="Tổng quan">
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/builder" element={
-              <ProtectedRoute>
-                <Layout title="Xây dựng chatbot">
-                  <ChatbotBuilder />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/conversations" element={
-              <ProtectedRoute>
-                <Layout title="Hội thoại">
-                  <Conversations />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/analytics" element={
-              <ProtectedRoute>
-                <Layout title="Phân tích">
-                  <Analytics />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Layout title="Cài đặt">
-                  <Settings />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+// Chat components
+import { ChatInterface } from './components/Chat/ChatInterface';
+import { BusinessChat } from './components/Chat/BusinessChat';
+
+// Public components
+import { LandingPage } from './components/Public/LandingPage';
+import { NotFound } from './components/Public/NotFound';
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Toaster position="top-right" />
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Business dashboard routes */}
+          <Route path="/dashboard" element={<PrivateRoute><DashboardLayout><Navigate to="/dashboard/chats" /></DashboardLayout></PrivateRoute>} />
+          <Route path="/dashboard/chats" element={<PrivateRoute><DashboardLayout><ChatDashboard /></DashboardLayout></PrivateRoute>} />
+          <Route path="/dashboard/analytics" element={<PrivateRoute><DashboardLayout><AnalyticsDashboard /></DashboardLayout></PrivateRoute>} />
+          <Route path="/dashboard/customers" element={<PrivateRoute><DashboardLayout><CustomersDashboard /></DashboardLayout></PrivateRoute>} />
+          <Route path="/dashboard/settings" element={<PrivateRoute><DashboardLayout><SettingsDashboard /></DashboardLayout></PrivateRoute>} />
+          <Route path="/dashboard/chat/:chatId" element={<PrivateRoute><DashboardLayout><BusinessChat /></DashboardLayout></PrivateRoute>} />
+          
+          {/* User chat routes */}
+          <Route path="/chat/:businessId" element={<ChatInterface />} />
+          <Route path="/chat/:businessId/:chatId" element={<ChatInterface />} />
+          
+          {/* 404 route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;
