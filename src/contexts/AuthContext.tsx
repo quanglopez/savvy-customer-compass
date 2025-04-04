@@ -27,9 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Initializing auth provider...");
+    console.log("Khởi tạo Auth Provider...");
     
-    // Set up auth state listener FIRST
+    // Thiết lập listener cho trạng thái xác thực TRƯỚC
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Trạng thái xác thực thay đổi:', event, session?.user);
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
+    // SAU ĐÓ kiểm tra phiên hiện tại
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Kiểm tra phiên ban đầu:', session?.user);
       setSession(session);

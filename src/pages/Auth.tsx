@@ -26,6 +26,7 @@ export function Auth() {
   // Chuyển hướng nếu đã đăng nhập
   React.useEffect(() => {
     if (session) {
+      console.log("Người dùng đã đăng nhập, chuyển hướng đến trang chủ");
       navigate("/");
     }
   }, [session, navigate]);
@@ -33,6 +34,7 @@ export function Auth() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("Bắt đầu đăng nhập với:", email);
 
     if (!email || !password) {
       toast.error("Vui lòng nhập đầy đủ thông tin");
@@ -43,8 +45,10 @@ export function Auth() {
     const { error, success } = await signIn(email, password);
     
     if (error) {
+      console.error("Lỗi đăng nhập:", error);
       toast.error(error.message || "Đăng nhập thất bại");
     } else if (success) {
+      console.log("Đăng nhập thành công, chuyển hướng đến trang chủ");
       navigate("/");
     }
     
@@ -54,6 +58,7 @@ export function Auth() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("Bắt đầu đăng ký với:", email);
 
     if (!email || !password) {
       toast.error("Vui lòng nhập đầy đủ thông tin");
@@ -70,6 +75,7 @@ export function Auth() {
     const { error } = await signUp(email, password);
     
     if (error) {
+      console.error("Lỗi đăng ký:", error);
       toast.error(error.message || "Đăng ký thất bại");
     }
     
