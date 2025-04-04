@@ -14,12 +14,16 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Layout title="Home" />}>
-            <Route index element={<Index />} />
-            <Route path="/dashboard" element={<BusinessDashboard />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
+          <Route path="/" element={
+            <Layout title="Home">
+              <Routes>
+                <Route index element={<Index />} />
+                <Route path="/dashboard" element={<BusinessDashboard />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          } />
         </Routes>
       </Router>
       <Toaster />

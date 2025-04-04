@@ -96,36 +96,32 @@ export function useConversations() {
       if (messagesError) throw messagesError;
       
       // Get reactions for all messages
+      let messagesWithReactions: Message[] = messagesData || [];
+      
       if (messagesData && messagesData.length > 0) {
         const messageIds = messagesData.map(msg => msg.id);
         
-        // Use a raw query to get all reactions for these message IDs
+        // Manually fetch reactions for these messages
         const { data: reactionsData, error: reactionsError } = await supabase
-          .rpc('get_message_reactions', { message_ids: messageIds });
+          .from('message_reactions')
+          .select('*')
+          .in('message_id', messageIds);
 
-        if (reactionsError && reactionsError.message !== 'Function "get_message_reactions" does not exist') {
-          throw reactionsError;
-        }
-      
-        // Process messages with their reactions
-        const messagesWithReactions = messagesData.map(msg => {
-          const msgReactions = (reactionsData || [])
-            .filter(r => r.message_id === msg.id);
-          
-          return {
+        if (reactionsError) {
+          console.error("Error fetching reactions:", reactionsError);
+        } else if (reactionsData) {
+          // Process messages with their reactions
+          messagesWithReactions = messagesData.map(msg => ({
             ...msg,
-            reactions: msgReactions || []
-          };
-        });
-        
-        setMessages(messagesWithReactions);
-      } else {
-        setMessages([]);
+            reactions: reactionsData.filter(r => r.message_id === msg.id) || []
+          }));
+        }
       }
       
+      setMessages(messagesWithReactions);
       setIsLoading(false);
       
-      return messagesData || [];
+      return messagesWithReactions;
     } catch (error) {
       toast({
         title: "Error fetching messages",
@@ -324,82 +320,60 @@ export function useConversations() {
     if (!user?.id) return false;
     
     try {
-      // Using a raw SQL query via RPC (stored procedure) to handle the reaction logic
-      const { data, error } = await supabase.rpc(
-        'toggle_message_reaction',
-        {
-          p_message_id: messageId,
-          p_user_id: user.id,
-          p_reaction_type: reactionType
-        }
-      );
+      // Check if user already reacted with this type
+      let existingReaction = null;
       
-      if (error) {
-        if (error.message.includes('Function "toggle_message_reaction" does not exist')) {
-          // Fall back to direct handling if the function doesn't exist
-          // Check if user already reacted with this type
-          let existingReaction = null;
+      // Find the message
+      const message = messages.find(m => m.id === messageId);
+      if (message?.reactions) {
+        existingReaction = message.reactions.find(r => 
+          r.user_id === user.id && r.type === reactionType
+        );
+      }
+      
+      if (existingReaction) {
+        // Remove reaction if it exists
+        const { error: deleteError } = await supabase
+          .from('message_reactions')
+          .delete()
+          .eq('id', existingReaction.id);
           
-          // Find the message
-          const message = messages.find(m => m.id === messageId);
-          if (message?.reactions) {
-            existingReaction = message.reactions.find(r => 
-              r.user_id === user.id && r.type === reactionType
-            );
-          }
-          
-          if (existingReaction) {
-            // Remove reaction if it exists
-            const { error: deleteError } = await supabase
-              .from('message_reactions')
-              .delete()
-              .match({ id: existingReaction.id });
-              
-            if (deleteError) throw deleteError;
-            
-            // Update local state
-            setMessages(messages.map(m => {
-              if (m.id === messageId) {
-                return {
-                  ...m,
-                  reactions: (m.reactions || []).filter(r => r.id !== existingReaction!.id)
-                };
-              }
-              return m;
-            }));
-          } else {
-            // Add new reaction
-            const reactionData = {
-              message_id: messageId,
-              user_id: user.id,
-              type: reactionType
+        if (deleteError) throw deleteError;
+        
+        // Update local state
+        setMessages(messages.map(m => {
+          if (m.id === messageId) {
+            return {
+              ...m,
+              reactions: (m.reactions || []).filter(r => r.id !== existingReaction!.id)
             };
-            
-            const { data: newReaction, error: insertError } = await supabase
-              .from('message_reactions')
-              .insert(reactionData)
-              .select()
-              .single();
-              
-            if (insertError) throw insertError;
-            
-            // Update local state
-            setMessages(messages.map(m => {
-              if (m.id === messageId) {
-                const updatedReactions = [...(m.reactions || []), newReaction];
-                return { ...m, reactions: updatedReactions };
-              }
-              return m;
-            }));
           }
-        } else {
-          throw error;
-        }
+          return m;
+        }));
       } else {
-        // If the RPC call was successful, refetch the messages to get updated reactions
-        if (currentConversation) {
-          fetchMessages(currentConversation.id);
-        }
+        // Add new reaction
+        const reactionData = {
+          message_id: messageId,
+          user_id: user.id,
+          type: reactionType
+        };
+        
+        const { data: newReaction, error: insertError } = await supabase
+          .from('message_reactions')
+          .insert(reactionData)
+          .select()
+          .single();
+          
+        if (insertError) throw insertError;
+        
+        // Update local state
+        setMessages(messages.map(m => {
+          if (m.id === messageId) {
+            const updatedReactions = [...(m.reactions || []), newReaction];
+            return { ...m, reactions: updatedReactions };
+          }
+          return m;
+        }));
       }
       
       return true;

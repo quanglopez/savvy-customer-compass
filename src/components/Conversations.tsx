@@ -19,11 +19,10 @@ export function Conversations() {
     sendMessage,
     updateMessage,
     addReaction,
+    messages,
   } = useConversations();
   
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
   const [newConversationTitle, setNewConversationTitle] = useState("");
   
   // Find the selected conversation
@@ -32,24 +31,9 @@ export function Conversations() {
   // Load messages when a conversation is selected
   useEffect(() => {
     if (selectedChatId) {
-      setLoading(true);
       selectConversation(selectedChatId);
-      setLoading(false);
-    } else {
-      setMessages([]);
     }
   }, [selectedChatId, selectConversation]);
-
-  // Setup real-time message subscription (we'll handle this differently)
-  useEffect(() => {
-    if (!selectedChatId) return;
-    
-    // This will be handled by the useConversations hook internally
-    
-    return () => {
-      // No need for cleanup as it's handled internally
-    };
-  }, [selectedChatId]);
 
   const handleSendMessage = async (content: string) => {
     if (!selectedChatId) return;
@@ -134,7 +118,7 @@ export function Conversations() {
 
               <MessagesList 
                 messages={messages}
-                isLoading={loading}
+                isLoading={isLoading}
                 onUpdateMessage={handleUpdateMessage}
                 onAddReaction={handleAddReaction}
               />
