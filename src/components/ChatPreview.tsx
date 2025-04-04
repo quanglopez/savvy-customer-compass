@@ -36,7 +36,7 @@ export function ChatPreview({ chat, onClick, active }: ChatPreviewProps) {
   const platformIcon = {
     web: <Globe className="h-3 w-3" />,
     facebook: <Facebook className="h-3 w-3" />,
-    whatsapp: <MessageSquare className="h-3 w-3" />,
+    whatsapp: <MessagesSquare className="h-3 w-3" />,
     telegram: <Send className="h-3 w-3" />,
   };
 
