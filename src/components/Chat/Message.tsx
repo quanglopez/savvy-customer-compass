@@ -1,13 +1,16 @@
 
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { User, Bot } from 'lucide-react';
+import { vi } from 'date-fns/locale';
+import { User, Bot, Check, CheckCheck } from 'lucide-react';
 
 interface MessageProps {
   content: string;
   isCurrentUser: boolean;
   timestamp: Date;
   isBot?: boolean;
+  isRead?: boolean;
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
 }
 
 export const Message: React.FC<MessageProps> = ({
@@ -15,7 +18,26 @@ export const Message: React.FC<MessageProps> = ({
   isCurrentUser,
   timestamp,
   isBot = false,
+  isRead = false,
+  status = 'sent',
 }) => {
+  const renderStatusIcon = () => {
+    switch(status) {
+      case 'sending':
+        return <span className="h-3 w-3 rounded-full bg-gray-300 animate-pulse"></span>;
+      case 'sent':
+        return <Check className="h-3 w-3 text-gray-500" />;
+      case 'delivered':
+        return <CheckCheck className="h-3 w-3 text-gray-500" />;
+      case 'read':
+        return <CheckCheck className="h-3 w-3 text-blue-500" />;
+      case 'error':
+        return <span className="text-xs text-red-500">Lỗi</span>;
+      default:
+        return null;
+    }
+  };
+  
   return (
     <div
       className={`flex ${
@@ -46,13 +68,18 @@ export const Message: React.FC<MessageProps> = ({
         >
           {content}
         </div>
-        <span
-          className={`text-xs mt-1 text-gray-500 ${
-            isCurrentUser ? 'text-right' : 'text-left'
+        <div
+          className={`flex items-center mt-1 space-x-1 text-xs text-gray-500 ${
+            isCurrentUser ? 'justify-end' : 'justify-start'
           }`}
         >
-          {formatDistanceToNow(timestamp, { addSuffix: true })}
-        </span>
+          <span>{formatDistanceToNow(timestamp, { addSuffix: true, locale: vi })}</span>
+          {isCurrentUser && (
+            <div className="flex items-center">
+              {renderStatusIcon()}
+            </div>
+          )}
+        </div>
       </div>
       
       {isCurrentUser && (
