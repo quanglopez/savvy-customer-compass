@@ -172,7 +172,7 @@ export function Analytics() {
                 categories={["automated", "handoff"]}
                 index="date"
                 colors={["#0066CC", "#00A3B4"]}
-                stack
+                stack={true}
                 valueFormatter={(value: number) => `${value} hội thoại`}
                 className="h-[300px]"
               />

@@ -239,7 +239,7 @@ const ChartTooltipContent = React.forwardRef<
                       </div>
                       {item.value && (
                         <span className="font-mono font-medium tabular-nums text-foreground">
-                          {item.value.toLocaleString()}
+                          {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
                         </span>
                       )}
                     </div>
@@ -354,8 +354,21 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
-// Add the chart components that are missing
-function AreaChart({
+// AreaChart component
+const AreaChart: React.FC<{
+  data: Record<string, any>[];
+  index: string;
+  categories: string[];
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  showXAxis?: boolean;
+  showYAxis?: boolean;
+  showLegend?: boolean;
+  showGridLines?: boolean;
+  showTooltip?: boolean;
+  showGradient?: boolean;
+  className?: string;
+}> = ({
   data,
   index,
   categories,
@@ -369,19 +382,7 @@ function AreaChart({
   showGradient = true,
   className,
   ...props
-}: React.ComponentProps<typeof ChartContainer> & {
-  data: Record<string, any>[]
-  index: string
-  categories: string[]
-  colors?: string[]
-  valueFormatter?: (value: number) => string
-  showXAxis?: boolean
-  showYAxis?: boolean
-  showLegend?: boolean
-  showGridLines?: boolean
-  showTooltip?: boolean
-  showGradient?: boolean
-}) {
+}) => {
   const config = React.useMemo<ChartConfig>(() => {
     const _config: ChartConfig = {}
 
@@ -413,7 +414,7 @@ function AreaChart({
             className="text-sm"
             width={40}
             tickFormatter={(value) =>
-              valueFormatter ? valueFormatter(value) : value
+              valueFormatter && typeof value === 'number' ? valueFormatter(value) : value
             }
           />
         )}
@@ -435,7 +436,7 @@ function AreaChart({
                           />
                           <span className="text-sm text-muted-foreground">
                             {entry.name}:{" "}
-                            {valueFormatter
+                            {valueFormatter && typeof entry.value === 'number'
                               ? valueFormatter(entry.value)
                               : entry.value}
                           </span>
@@ -490,7 +491,21 @@ function AreaChart({
   )
 }
 
-function BarChart({
+// BarChart component
+const BarChart: React.FC<{
+  data: Record<string, any>[];
+  index: string;
+  categories: string[];
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  showXAxis?: boolean;
+  showYAxis?: boolean;
+  showLegend?: boolean;
+  showGridLines?: boolean;
+  showTooltip?: boolean;
+  stack?: boolean;
+  className?: string;
+}> = ({
   data,
   index,
   categories,
@@ -504,19 +519,7 @@ function BarChart({
   stack = false,
   className,
   ...props
-}: React.ComponentProps<typeof ChartContainer> & {
-  data: Record<string, any>[]
-  index: string
-  categories: string[]
-  colors?: string[]
-  valueFormatter?: (value: number) => string
-  showXAxis?: boolean
-  showYAxis?: boolean
-  showLegend?: boolean
-  showGridLines?: boolean
-  showTooltip?: boolean
-  stack?: boolean
-}) {
+}) => {
   const config = React.useMemo<ChartConfig>(() => {
     const _config: ChartConfig = {}
 
@@ -548,7 +551,7 @@ function BarChart({
             className="text-sm"
             width={40}
             tickFormatter={(value) =>
-              valueFormatter ? valueFormatter(value) : value
+              valueFormatter && typeof value === 'number' ? valueFormatter(value) : value
             }
           />
         )}
@@ -570,7 +573,7 @@ function BarChart({
                           />
                           <span className="text-sm text-muted-foreground">
                             {entry.name}:{" "}
-                            {valueFormatter
+                            {valueFormatter && typeof entry.value === 'number'
                               ? valueFormatter(entry.value)
                               : entry.value}
                           </span>
@@ -622,7 +625,17 @@ function BarChart({
   )
 }
 
-function PieChart({
+// PieChart component
+const PieChart: React.FC<{
+  data: Record<string, any>[];
+  index: string;
+  categories: string[];
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  showTooltip?: boolean;
+  showLegend?: boolean;
+  className?: string;
+}> = ({
   data,
   index,
   categories,
@@ -632,15 +645,7 @@ function PieChart({
   showLegend = true,
   className,
   ...props
-}: React.ComponentProps<typeof ChartContainer> & {
-  data: Record<string, any>[]
-  index: string
-  categories: string[]
-  colors?: string[]
-  valueFormatter?: (value: number) => string
-  showTooltip?: boolean
-  showLegend?: boolean
-}) {
+}) => {
   const config = React.useMemo<ChartConfig>(() => {
     const _config: ChartConfig = {}
 
@@ -675,7 +680,7 @@ function PieChart({
                       <span className="font-medium">{name}</span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {valueFormatter ? valueFormatter(value) : value}
+                      {valueFormatter && typeof value === 'number' ? valueFormatter(value) : value}
                     </div>
                   </div>
                 </div>
