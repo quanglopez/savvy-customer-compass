@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -62,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <SheetTrigger asChild>{trigger}</SheetTrigger>
         <SheetContent
           side={side}
-          className={cn(className)}
+          className={className}
         >
           {children}
         </SheetContent>

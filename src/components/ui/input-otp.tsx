@@ -1,9 +1,17 @@
 
 import * as React from "react"
-import { OTPInput, OTPInputContext, type OTPInputContextValue } from "input-otp"
+import { OTPInput, OTPInputContext } from "input-otp"
 import { Dot } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+
+type InputOTPContextValue = {
+  slots: {
+    char: string | undefined
+    isActive: boolean
+    hasFakeCaret: boolean
+  }[]
+}
 
 const InputOTP = React.forwardRef<
   React.ElementRef<typeof OTPInput>,

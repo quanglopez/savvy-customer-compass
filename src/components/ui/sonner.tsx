@@ -1,11 +1,10 @@
 
-import { useTheme } from "@radix-ui/react-toggle-group"
+import * as React from "react"
 import { Toaster as Sonner } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  // We're using Radix UI's toggle group instead of next-themes here
   const theme = "light" // Default to light theme
 
   return (
